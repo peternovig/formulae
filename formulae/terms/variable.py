@@ -145,13 +145,14 @@ class Variable:
         """
         # If not ordered, we make it ordered.
         if not hasattr(x.dtype, "ordered") or not x.dtype.ordered:
-            categories = sorted(np.unique(x).tolist())
-            dtype = pd.api.types.CategoricalDtype(categories=categories, ordered=True)
-            x = pd.Categorical(x).astype(dtype)
+            self.categories = sorted(np.unique(x).tolist())
+            self.dtype = pd.api.types.CategoricalDtype(categories=self.categories, ordered=True)
+            x = pd.Categorical(x).astype(self.dtype)
         else:
             x = pd.Categorical(x)
 
         self.levels = x.categories.tolist()
+        self.level_codes = {level: code for code, level in enumerate(self.levels)}
 
         # Result of 'variable[level]' is always binary
         if self.is_response and self.reference is not None:
@@ -213,17 +214,17 @@ class Variable:
         """
         new_data_levels = set(x)
         original_levels = set(self.levels)
-        difference = new_data_levels - original_levels
 
-        if not difference:
-            idxs = pd.Categorical(x, categories=self.levels).codes
-            return self.contrast_matrix.matrix[idxs]
-        else:
-            difference = [str(x) for x in difference]
-            raise ValueError(
-                f"The levels {', '.join(difference)} in '{self.name}' are not present in "
-                "the original data set."
-            )
+        all_levels = original_levels.union(new_data_levels)
+        new_contrast_matrix = np.zeros((len(all_levels), self.contrast_matrix.matrix.shape[1]))
+
+        for i, level in enumerate(all_levels):
+            if level in original_levels:
+                idx = self.level_codes[level]
+                new_contrast_matrix[i] = self.contrast_matrix.matrix[idx]
+
+        codes = [self.level_codes[level] for level in x]
+        return new_contrast_matrix[codes]
 
     @property
     def labels(self):
