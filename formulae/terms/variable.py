@@ -223,7 +223,10 @@ class Variable:
                 idx = self.level_codes[level]
                 new_contrast_matrix[i] = self.contrast_matrix.matrix[idx]
 
-        codes = [self.level_codes[level] for level in x]
+        codes = np.zeros(len(x), dtype=int)
+        for i, level in enumerate(x):
+            codes[i] = list(all_levels).index(level)
+
         return new_contrast_matrix[codes]
 
     @property
