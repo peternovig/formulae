@@ -221,6 +221,9 @@ class CommonEffectsMatrix:
         data = pd.DataFrame(self.design_matrix, columns=list(flatten_list(colnames)))
         return data
 
+    def __array__(self):
+        return self.design_matrix
+
 
 class GroupEffectsMatrix:
     """Representation of the design matrix for the group specific effects of a model.
@@ -318,6 +321,9 @@ class GroupEffectsMatrix:
         new_instance.slices = self.slices
         new_instance.evaluated = True
         return new_instance
+
+    def __array__(self):
+        return self.design_matrix
 
 
 def design_matrices(formula, data, na_action="drop", env=0, extra_namespace=None):
