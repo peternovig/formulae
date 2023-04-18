@@ -65,33 +65,6 @@ class DesignMatrices:
             self.group = GroupEffectsMatrix(self.model.group_terms)
             self.group.evaluate(data, env)
 
-    def __getitem__(self, index):
-        return (self.response, self.common, self.group)[index]
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        entries = []
-        if self.response:
-            entries += [glue_and_align("Response: ", self.response.design_matrix.shape, 30)]
-
-        if self.common:
-            entries += [glue_and_align("Common: ", self.common.design_matrix.shape, 30)]
-
-        if self.group:
-            entries += [glue_and_align("Group-specific: ", self.group.design_matrix.shape, 30)]
-
-        msg = (
-            "DesignMatrices\n\n"
-            + glue_and_align("", "(rows, cols)", 30)
-            + "\n"
-            + "\n".join(entries)
-            + "\n\n"
-            + "Use .reponse, .common, or .group to access the different members."
-        )
-        return msg
-
 
 class ResponseMatrix:
     """Representation of the respose matrix of a model.
@@ -149,26 +122,6 @@ class ResponseMatrix:
         """Returns ``self.design_matrix`` as a pandas.DataFrame."""
         data = pd.DataFrame(self.design_matrix, columns=self.term.term.labels)
         return data
-
-    def __array__(self):
-        return self.design_matrix
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        entries = [
-            f"name: {self.name}",
-            f"kind: {self.kind}",
-            f"shape: {self.design_matrix.shape}",
-        ]
-        if self.levels is not None:
-            entries += [f"levels: {self.levels}"]
-        msg = (
-            f"ResponseMatrix{wrapify(spacify(multilinify(entries, '')))}\n\n"
-            "To access the actual design matrix do 'np.array(this_obj)'"
-        )
-        return msg
 
 
 class CommonEffectsMatrix:
@@ -268,45 +221,6 @@ class CommonEffectsMatrix:
         data = pd.DataFrame(self.design_matrix, columns=list(flatten_list(colnames)))
         return data
 
-    def __getitem__(self, term):
-        """Get the sub-matrix that corresponds to a given term.
-
-        Parameters
-        ----------
-        term : string
-            The name of the term.
-
-        Returns
-        ----------
-        matrix : np.array
-            A 2-dimensional numpy array that represents the sub-matrix corresponding to the
-            term passed.
-        """
-        if term not in self.slices:
-            raise ValueError(f"'{term}' is not a valid term name")
-        return self.design_matrix[:, self.slices[term]]
-
-    def __array__(self):
-        return self.design_matrix
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        entries = []
-        for name, term in self.terms.items():
-            content = [f"kind: {term.kind}"]
-            if hasattr(term, "levels") and term.levels is not None:
-                content += [f"levels: {term.levels}"]
-            content += [slice_to_column(self.slices[name])]
-            entries += [f"{name}{wrapify(spacify(multilinify(content, '')))}"]
-        msg = (
-            f"CommonEffectsMatrix with shape {self.design_matrix.shape}\n"
-            f"Terms:{spacify(multilinify(entries, ''))}\n\n"
-            "To access the actual design matrix do 'np.array(this_obj)'"
-        )
-        return msg
-
 
 class GroupEffectsMatrix:
     """Representation of the design matrix for the group specific effects of a model.
@@ -404,45 +318,6 @@ class GroupEffectsMatrix:
         new_instance.slices = self.slices
         new_instance.evaluated = True
         return new_instance
-
-    def __getitem__(self, term):
-        """Get the sub-matrix that corresponds to a given term.
-
-        Parameters
-        ----------
-        term: string
-            The name of a group specific term.
-
-        Returns
-        ----------
-        matrix : np.array
-            A 2-dimensional numpy array that represents the sub-matrix corresponding to the
-            term passed.
-        """
-        if term not in self.slices:
-            raise ValueError(f"'{term}' is not a valid term name")
-        return self.design_matrix[:, self.slices[term]]
-
-    def __array__(self):
-        return self.design_matrix
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        entries = []
-        for name, term in self.terms.items():
-            content = [f"kind: {term.kind}", f"groups: {term.groups}"]
-            if hasattr(term.expr, "levels") and term.expr.levels is not None:
-                content += [f"levels: {term.expr.levels}"]
-            content += [slice_to_column(self.slices[name])]
-            entries += [f"{name}{wrapify(spacify(multilinify(content, '')))}"]
-        msg = (
-            f"GroupEffectsMatrix with shape {self.design_matrix.shape}\n"
-            f"Terms:{spacify(multilinify(entries, ''))}\n\n"
-            "To access the actual design matrix do 'np.array(this_obj)'"
-        )
-        return msg
 
 
 def design_matrices(formula, data, na_action="drop", env=0, extra_namespace=None):
