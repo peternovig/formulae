@@ -143,15 +143,15 @@ class Variable:
             Indicates if the encoding of categorical variables spans the intercept or not.
             Omitted when the variable is numeric.
         """
-        # If not ordered, we make it ordered.
-        if not hasattr(x.dtype, "ordered") or not x.dtype.ordered:
-            self.categories = sorted(np.unique(x).tolist())
-            self.dtype = pd.api.types.CategoricalDtype(categories=self.categories, ordered=True)
-            x = pd.Categorical(x).astype(self.dtype)
-        else:
-            x = pd.Categorical(x)
+        # # If not ordered, we make it ordered.
+        # if not hasattr(x.dtype, "ordered") or not x.dtype.ordered:
+        #     self.categories = sorted(np.unique(x).tolist())
+        #     self.dtype = pd.api.types.CategoricalDtype(categories=self.categories, ordered=True)
+        #     x = pd.Categorical(x).astype(self.dtype)
+        # else:
+        #     x = pd.Categorical(x)
 
-        self.levels = x.categories.tolist()
+        self.levels = sorted(np.unique(x).tolist())  # x.categories.tolist()
         self.level_codes = {level: code for code, level in enumerate(self.levels)}
 
         # Result of 'variable[level]' is always binary
@@ -164,7 +164,9 @@ class Variable:
                 self.contrast_matrix = treatment.code_with_intercept(self.levels)
             else:
                 self.contrast_matrix = treatment.code_without_intercept(self.levels)
-            value = self.contrast_matrix.matrix[x.codes]
+            value = self.contrast_matrix.matrix[
+                np.searchsorted(self.levels, x)
+            ]  # self.contrast_matrix.matrix[x.codes]
 
         self.value = value
         self.spans_intercept = spans_intercept

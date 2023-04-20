@@ -196,14 +196,16 @@ class Call:
         """
 
         # If not ordered, we make it ordered.
-        if not hasattr(x.dtype, "ordered") or not x.dtype.ordered:
-            categories = sorted(np.unique(x).tolist())
-            dtype = pd.api.types.CategoricalDtype(categories=categories, ordered=True)
-            x = pd.Categorical(x).astype(dtype)
-        else:
-            x = pd.Categorical(x)
+        # if not hasattr(x.dtype, "ordered") or not x.dtype.ordered:
+        #     categories = sorted(np.unique(x).tolist())
+        #     dtype = pd.api.types.CategoricalDtype(categories=categories, ordered=True)
+        #     x = pd.Categorical(x).astype(dtype)
+        # else:
+        #     x = pd.Categorical(x)
 
-        self.levels = x.categories.tolist()
+        categories = sorted(np.unique(x).tolist())
+
+        self.levels = categories  # x.categories.tolist()
 
         treatment = Treatment()
         if spans_intercept:
@@ -211,7 +213,9 @@ class Call:
         else:
             self.contrast_matrix = treatment.code_without_intercept(self.levels)
 
-        self.value = self.contrast_matrix.matrix[x.codes]
+        self.value = self.contrast_matrix.matrix[
+            np.searchsorted(self.levels, x)
+        ]  # self.contrast_matrix.matrix[x.codes]
         self.spans_intercept = spans_intercept
 
     def eval_categorical_box(self, box, spans_intercept):
@@ -307,7 +311,8 @@ class Call:
         difference = new_data_levels - original_levels
 
         if not difference:
-            idxs = pd.Categorical(x, categories=self.levels).codes
+            idxs = np.searchsorted(self.levels, x)
+            # idxs = pd.Categorical(x, categories=self.levels).codes
             return self.contrast_matrix.matrix[idxs]
         else:
             difference = [str(x) for x in difference]
